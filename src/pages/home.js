@@ -166,7 +166,7 @@ const Home = () => {
   };
 
   return (
-    <div className="max-w-4xl mx-auto my-20 bg-blue-100 p-16 rounded-lg shadow-lg relative">
+    <div className="max-w-4xl mx-auto my-20 bg-blue-50 p-16 rounded-lg shadow-lg relative">
       <h1 className="text-2xl font-bold text-left mb-4">Home Address</h1>
       <p className="text-left mb-4 text-gray-800">Please provide your current India Home Address:</p>
       <hr className="mb-4" />
