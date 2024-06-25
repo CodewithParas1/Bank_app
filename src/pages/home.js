@@ -15,7 +15,7 @@ const Home = () => {
     const value = e.target.value;
     setQuery(value);
 
-    if (value.length > 1) {
+    if (value.length > 2) {
       try {
         const url = 'https://api.everythinglocation.com/address/complete';
         const params = new URLSearchParams({
@@ -29,7 +29,6 @@ const Home = () => {
           throw new Error('Network response was not ok');
         }
         const data = await response.json();
-        console.log(data);
         setAddresses(data.metadata);
       } catch (error) {
         console.log(error);
@@ -101,6 +100,13 @@ const Home = () => {
   };
 
   const toggleManualPopup = () => {
+    setManualAddress({
+      houseNumber: '',
+      streetName: '',
+      townCity: '',
+      postcode: '',
+      houseName: '' // Assuming house number is not part of selected address
+    });
     setManualPopupVisible(!isManualPopupVisible);
   };
 
@@ -158,6 +164,13 @@ const Home = () => {
 
     if (isValid) {
       alert('Manual address submitted successfully!');
+      setSelectedAddress({
+        Premise: manualAddress.houseNumber,
+        Name: manualAddress.houseName,
+        Thoroughfare: manualAddress.streetName,
+        Locality: manualAddress.townCity,
+        PostalCode: manualAddress.postcode
+      });
       setManualPopupVisible(false);
     } else {
       setManualErrors(errors);
@@ -228,7 +241,7 @@ const Home = () => {
             <div className="search-container flex flex-col w-[350px]">
               <input type="search" value={query} className="input bg-white text-[#242424] py-1 px-2 min-h-[40px] rounded-md outline-none leading-[1.15] shadow-[0px_10px_20px_-18px_rgba(0,0,0,0.1)] mt-[10px] border-2 border-[rgb(182,182,182)] border-solid" placeholder="Enter Address" onChange={handleSearch} autoComplete="off" />
             </div>
-            {addresses.length > 1 && (
+            {addresses.length > 2 && (
               <ul className="search-wrap rounded-lg bg-[rgb(253,253,253)] mt-0 pt-1 pb-1 max-h-[150px] overflow-y-auto flex flex-col w-[350px]">
                 {addresses.map((address, index) => (
                   <li key={index} onClick={() => handleSelectAddress(address)} className="search-result flex relative bg-[rgb(253,253,253)] p-1 rounded-lg h-auto font-[Gill Sans] text-[#464646] cursor-pointer">
@@ -284,7 +297,6 @@ const Home = () => {
         Please check your details above. You won't be able to change it once submitted.
       </p>
 
-      {/* Manual Address Popup */}
       {isManualPopupVisible && (
         <div id="popupFormManual" className="fixed inset-0 bg-gray-800 bg-opacity-50 flex items-center justify-center">
           <div className="bg-white p-8 rounded shadow-lg max-w-md w-full relative">
