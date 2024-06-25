@@ -242,7 +242,7 @@ const Home = () => {
               <input type="search" value={query} className="input bg-white text-[#242424] py-1 px-2 min-h-[40px] rounded-md outline-none leading-[1.15] shadow-[0px_10px_20px_-18px_rgba(0,0,0,0.1)] mt-[10px] border-2 border-[rgb(182,182,182)] border-solid" placeholder="Enter Address" onChange={handleSearch} autoComplete="off" />
             </div>
             {addresses.length > 2 && (
-              <ul className="search-wrap rounded-lg bg-[rgb(253,253,253)] mt-0 pt-1 pb-1 max-h-[150px] overflow-y-auto flex flex-col w-[350px]">
+              <ul className="search-wrap absolute rounded-lg bg-[rgb(253,253,253)] mt-0 pt-1 pb-1 max-h-[150px] shadow-lg overflow-y-auto flex flex-col w-[350px]">
                 {addresses.map((address, index) => (
                   <li key={index} onClick={() => handleSelectAddress(address)} className="search-result flex relative bg-[rgb(253,253,253)] p-1 rounded-lg h-auto font-[Gill Sans] text-[#464646] cursor-pointer">
                     {address.Premise} {address.Thoroughfare} {address.Locality} {address.PostalCode}
