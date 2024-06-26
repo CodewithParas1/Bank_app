@@ -1,7 +1,6 @@
-// App.js
 import React from 'react';
 import Home from './pages/home';
-import './index.css';// Import Tailwind CSS
+import './index.css';
 
 function App() {
   return (
@@ -11,4 +10,4 @@ function App() {
   );
 }
 
-export default App; // Make sure App component is exported
+export default App;

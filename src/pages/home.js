@@ -1,11 +1,49 @@
 import React, { useState } from 'react';
-import '../index.css'; 
+import '../index.css';
 
 const Home = () => {
-  const [selectedAddress, setSelectedAddress] = useState('');
   const [livedDuration, setLivedDuration] = useState('');
   const [isManualPopupVisible, setManualPopupVisible] = useState(false);
   const [isChangePopupVisible, setChangePopupVisible] = useState(false);
+  const [query, setQuery] = useState('');
+  const [addresses, setAddresses] = useState([]);
+  const [selectedAddress, setSelectedAddress] = useState(null);
+
+  const API_KEY = process.env.REACT_APP_API_KEY;
+
+  const handleSearch = async (e) => {
+    const value = e.target.value;
+    setQuery(value);
+
+    if (value.length > 2) {
+      try {
+        const url = 'https://api.everythinglocation.com/address/complete';
+        const params = new URLSearchParams({
+          lqtkey: API_KEY,
+          query: value,
+          country: 'USA'
+        });
+
+        const response = await fetch(`${url}?${params.toString()}`);
+        if (!response.ok) {
+          throw new Error('Network response was not ok');
+        }
+        const data = await response.json();
+        setAddresses(data.metadata);
+      } catch (error) {
+        console.log(error);
+      }
+    } else {
+      setAddresses([]);
+    }
+  };
+
+  const handleSelectAddress = (address) => {
+    setSelectedAddress(address);
+    setQuery('');
+    setAddresses([]);
+  };
+
   const [manualAddress, setManualAddress] = useState({
     houseName: '',
     houseNumber: '',
@@ -62,6 +100,13 @@ const Home = () => {
   };
 
   const toggleManualPopup = () => {
+    setManualAddress({
+      houseNumber: '',
+      streetName: '',
+      townCity: '',
+      postcode: '',
+      houseName: '' // Assuming house number is not part of selected address
+    });
     setManualPopupVisible(!isManualPopupVisible);
   };
 
@@ -70,17 +115,17 @@ const Home = () => {
       alert('Please select an address first.');
       return;
     }
-    const addressParts = selectedAddress.split(', ');
-    if (addressParts.length < 5) {
+    // const addressParts = selectedAddress.split(', ');
+    if (selectedAddress.length < 5) {
       alert('Invalid address format.');
       return;
     }
     setChangeAddress({
-      houseName: addressParts[0],
-      streetName: addressParts[1],
-      townCity: addressParts[2],
-      postcode: addressParts[3],
-      houseNumber: '' // Assuming house number is not part of selected address
+      houseNumber: selectedAddress.Premise,
+      streetName: selectedAddress.Thoroughfare,
+      townCity: selectedAddress.Locality,
+      postcode: selectedAddress.PostalCode,
+      houseName: selectedAddress.Name // Assuming house number is not part of selected address
     });
     setChangePopupVisible(!isChangePopupVisible);
   };
@@ -119,6 +164,13 @@ const Home = () => {
 
     if (isValid) {
       alert('Manual address submitted successfully!');
+      setSelectedAddress({
+        Premise: manualAddress.houseNumber,
+        Name: manualAddress.houseName,
+        Thoroughfare: manualAddress.streetName,
+        Locality: manualAddress.townCity,
+        PostalCode: manualAddress.postcode
+      });
       setManualPopupVisible(false);
     } else {
       setManualErrors(errors);
@@ -159,11 +211,22 @@ const Home = () => {
 
     if (isValid) {
       alert('Address changed successfully!');
+      setSelectedAddress({
+        Premise: changeAddress.houseNumber,
+        Name: changeAddress.houseName,
+        Thoroughfare: changeAddress.streetName,
+        Locality: changeAddress.townCity,
+        PostalCode: changeAddress.postcode
+      });
       setChangePopupVisible(false);
     } else {
       setChangeErrors(errors);
     }
   };
+
+  const handleRemoveAddress = () => {
+    setSelectedAddress(null);
+  }
 
   return (
     <div className="max-w-4xl mx-auto my-20 bg-blue-50 p-16 rounded-lg shadow-lg relative">
@@ -172,25 +235,34 @@ const Home = () => {
       <hr className="mb-4" />
 
       <div className="mb-4">
-        <label htmlFor="searchAddress" className="block text-gray-700">Search For Your Address:</label>
-        <select 
-          id="searchAddress" 
-          name="searchAddress" 
-          className="w-full p-2 border border-gray-300 rounded mt-2"
-          value={selectedAddress}
-          onChange={handleAddressChange}
-        >
-          <option value="">Select Address</option>
-          <option value="123 Main St, Springfield, IL, 62704, USA">123 Main St, Springfield, IL, 62704, USA</option>
-          <option value="456 Elm St, Metropolis, NY, 10001, USA">456 Elm St, Metropolis, NY, 10001, USA</option>
-          <option value="789 Oak St, Smallville, KS, 67524, USA">789 Oak St, Smallville, KS, 67524, USA</option>
-          <option value="101 Maple St, Gotham, NJ, 07030, USA">101 Maple St, Gotham, NJ, 07030, USA</option>
-        </select>
-        {selectedAddress && (
+
+        {!selectedAddress ? (
           <>
-            <div id="selectedAddress" className="w-full p-2 border border-gray-300 rounded mt-2 whitespace-pre-line">
-              Address: {selectedAddress}{"\n"}Lived Duration: {livedDuration}
+            <div className="search-container flex flex-col w-[350px]">
+              <input type="search" value={query} className="input bg-white text-[#242424] py-1 px-2 min-h-[40px] rounded-md outline-none leading-[1.15] shadow-[0px_10px_20px_-18px_rgba(0,0,0,0.1)] mt-[10px] border-2 border-[rgb(182,182,182)] border-solid" placeholder="Enter Address" onChange={handleSearch} autoComplete="off" />
             </div>
+            {addresses.length > 2 && (
+              <ul className="search-wrap absolute rounded-lg bg-[rgb(253,253,253)] mt-0 pt-1 pb-1 max-h-[150px] shadow-lg overflow-y-auto flex flex-col w-[350px]">
+                {addresses.map((address, index) => (
+                  <li key={index} onClick={() => handleSelectAddress(address)} className="search-result flex relative bg-[rgb(253,253,253)] p-1 rounded-lg h-auto font-[Gill Sans] text-[#464646] cursor-pointer">
+                    {address.Premise} {address.Thoroughfare} {address.Locality} {address.PostalCode}
+                  </li>
+                ))}
+              </ul>
+            )}
+          </>
+        ) : (
+          <>
+
+            <div id="selectedAddress" className="w-full p-2 border border-gray-300 rounded mt-2 whitespace-pre-line flex flex-row-reverse justify-between">
+              <div className="hover:underline cursor-pointer" onClick={handleRemoveAddress}>
+                Remove Address
+              </div>
+
+              Address: {selectedAddress.Premise} {selectedAddress.Name} {selectedAddress.Thoroughfare} {selectedAddress.Locality} {selectedAddress.PostalCode}{"\n"}Lived Duration: {livedDuration}
+
+            </div>
+
             <a href="#" id="changeAddressLink" className="block text-left mt-4 text-blue-500 hover:underline" onClick={toggleChangePopup}>Change Address</a>
           </>
         )}
@@ -202,7 +274,7 @@ const Home = () => {
             Please select an address or enter manually using the link below:
           </p>
           <a href="#" id="manualEntryLink" className="block text-left text-blue-500 hover:underline mb-4" onClick={toggleManualPopup}>
-            Prefer to enter address manually 
+            Prefer to enter address manually
           </a>
         </>
       )}
@@ -225,7 +297,6 @@ const Home = () => {
         Please check your details above. You won't be able to change it once submitted.
       </p>
 
-      {/* Manual Address Popup */}
       {isManualPopupVisible && (
         <div id="popupFormManual" className="fixed inset-0 bg-gray-800 bg-opacity-50 flex items-center justify-center">
           <div className="bg-white p-8 rounded shadow-lg max-w-md w-full relative">
@@ -234,24 +305,24 @@ const Home = () => {
             <form id="manualAddressForm" onSubmit={handleManualAddressSubmit}>
               <div className="mb-4">
                 <label htmlFor="houseBuildingNameManual" className="block text-gray-700">House or Building Name:</label>
-                <input 
-                  type="text" 
-                  id="houseBuildingNameManual" 
-                  name="houseBuildingNameManual" 
+                <input
+                  type="text"
+                  id="houseBuildingNameManual"
+                  name="houseBuildingNameManual"
                   className={`w-full p-2 border border-gray-300 rounded mt-2 ${manualErrors.houseName ? 'border-red-500' : ''}`}
                   value={manualAddress.houseName}
                   onChange={(e) => setManualAddress({ ...manualAddress, houseName: e.target.value })}
                 />
-                                {manualErrors.houseName && (
+                {manualErrors.houseName && (
                   <p className="text-red-500 text-sm mt-1">{manualErrors.houseName}</p>
                 )}
               </div>
               <div className="mb-4">
                 <label htmlFor="houseBuildingNumberManual" className="block text-gray-700">House or Building Number:</label>
-                <input 
-                  type="text" 
-                  id="houseBuildingNumberManual" 
-                  name="houseBuildingNumberManual" 
+                <input
+                  type="text"
+                  id="houseBuildingNumberManual"
+                  name="houseBuildingNumberManual"
                   className={`w-full p-2 border border-gray-300 rounded mt-2 ${manualErrors.houseNumber ? 'border-red-500' : ''}`}
                   value={manualAddress.houseNumber}
                   onChange={(e) => setManualAddress({ ...manualAddress, houseNumber: e.target.value })}
@@ -262,10 +333,10 @@ const Home = () => {
               </div>
               <div className="mb-4">
                 <label htmlFor="streetNameManual" className="block text-gray-700">Street Name:</label>
-                <input 
-                  type="text" 
-                  id="streetNameManual" 
-                  name="streetNameManual" 
+                <input
+                  type="text"
+                  id="streetNameManual"
+                  name="streetNameManual"
                   className={`w-full p-2 border border-gray-300 rounded mt-2 ${manualErrors.streetName ? 'border-red-500' : ''}`}
                   value={manualAddress.streetName}
                   onChange={(e) => setManualAddress({ ...manualAddress, streetName: e.target.value })}
@@ -276,10 +347,10 @@ const Home = () => {
               </div>
               <div className="mb-4">
                 <label htmlFor="townCityManual" className="block text-gray-700">Town or City:</label>
-                <input 
-                  type="text" 
-                  id="townCityManual" 
-                  name="townCityManual" 
+                <input
+                  type="text"
+                  id="townCityManual"
+                  name="townCityManual"
                   className={`w-full p-2 border border-gray-300 rounded mt-2 ${manualErrors.townCity ? 'border-red-500' : ''}`}
                   value={manualAddress.townCity}
                   onChange={(e) => setManualAddress({ ...manualAddress, townCity: e.target.value })}
@@ -290,10 +361,10 @@ const Home = () => {
               </div>
               <div className="mb-4">
                 <label htmlFor="postcodeManual" className="block text-gray-700">Postcode:</label>
-                <input 
-                  type="text" 
-                  id="postcodeManual" 
-                  name="postcodeManual" 
+                <input
+                  type="text"
+                  id="postcodeManual"
+                  name="postcodeManual"
                   className={`w-full p-2 border border-gray-300 rounded mt-2 ${manualErrors.postcode ? 'border-red-500' : ''}`}
                   value={manualAddress.postcode}
                   onChange={(e) => setManualAddress({ ...manualAddress, postcode: e.target.value })}
@@ -320,10 +391,10 @@ const Home = () => {
             <form id="changeAddressForm" onSubmit={handleChangeAddressSubmit}>
               <div className="mb-4">
                 <label htmlFor="houseBuildingNameChange" className="block text-gray-700">House or Building Name:</label>
-                <input 
-                  type="text" 
-                  id="houseBuildingNameChange" 
-                  name="houseBuildingNameChange" 
+                <input
+                  type="text"
+                  id="houseBuildingNameChange"
+                  name="houseBuildingNameChange"
                   className={`w-full p-2 border border-gray-300 rounded mt-2 ${changeErrors.houseName ? 'border-red-500' : ''}`}
                   value={changeAddress.houseName}
                   onChange={(e) => setChangeAddress({ ...changeAddress, houseName: e.target.value })}
@@ -334,10 +405,10 @@ const Home = () => {
               </div>
               <div className="mb-4">
                 <label htmlFor="houseBuildingNumberChange" className="block text-gray-700">House or Building Number:</label>
-                <input 
-                  type="text" 
-                  id="houseBuildingNumberChange" 
-                  name="houseBuildingNumberChange" 
+                <input
+                  type="text"
+                  id="houseBuildingNumberChange"
+                  name="houseBuildingNumberChange"
                   className={`w-full p-2 border border-gray-300 rounded mt-2 ${changeErrors.houseNumber ? 'border-red-500' : ''}`}
                   value={changeAddress.houseNumber}
                   onChange={(e) => setChangeAddress({ ...changeAddress, houseNumber: e.target.value })}
@@ -348,10 +419,10 @@ const Home = () => {
               </div>
               <div className="mb-4">
                 <label htmlFor="streetNameChange" className="block text-gray-700">Street Name:</label>
-                <input 
-                  type="text" 
-                  id="streetNameChange" 
-                  name="streetNameChange" 
+                <input
+                  type="text"
+                  id="streetNameChange"
+                  name="streetNameChange"
                   className={`w-full p-2 border border-gray-300 rounded mt-2 ${changeErrors.streetName ? 'border-red-500' : ''}`}
                   value={changeAddress.streetName}
                   onChange={(e) => setChangeAddress({ ...changeAddress, streetName: e.target.value })}
@@ -362,10 +433,10 @@ const Home = () => {
               </div>
               <div className="mb-4">
                 <label htmlFor="townCityChange" className="block text-gray-700">Town or City:</label>
-                <input 
-                  type="text" 
-                  id="townCityChange" 
-                  name="townCityChange" 
+                <input
+                  type="text"
+                  id="townCityChange"
+                  name="townCityChange"
                   className={`w-full p-2 border border-gray-300 rounded mt-2 ${changeErrors.townCity ? 'border-red-500' : ''}`}
                   value={changeAddress.townCity}
                   onChange={(e) => setChangeAddress({ ...changeAddress, townCity: e.target.value })}
@@ -376,10 +447,10 @@ const Home = () => {
               </div>
               <div className="mb-4">
                 <label htmlFor="postcodeChange" className="block text-gray-700">Postcode:</label>
-                <input 
-                  type="text" 
-                  id="postcodeChange" 
-                  name="postcodeChange" 
+                <input
+                  type="text"
+                  id="postcodeChange"
+                  name="postcodeChange"
                   className={`w-full p-2 border border-gray-300 rounded mt-2 ${changeErrors.postcode ? 'border-red-500' : ''}`}
                   value={changeAddress.postcode}
                   onChange={(e) => setChangeAddress({ ...changeAddress, postcode: e.target.value })}
